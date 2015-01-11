@@ -13,8 +13,11 @@ func main() {
 	startPtr := flag.String("start", "", "start query")
 	endPtr := flag.String("end", "", "end query")
 	queuePtr := flag.String("queue", "", "SQS queue")
+	debugPtr := flag.Bool("debug", false, "debug mode")
 	flag.Parse()
-	fmt.Printf("%v/%v/%v", *startPtr, *endPtr, *queuePtr)
+	if *debugPtr {
+		fmt.Println("debug mode: no message will actually be sent.")
+	}
 	bs := ts4.New("")
 	auth, err := aws.EnvAuth()
 	if err != nil {
@@ -30,11 +33,14 @@ func main() {
 	cnt := 0
 	size := 0
 	for blob := range blobs {
-		if _, err := queue.SendMessage(string(blob)); err != nil {
-			panic(err)
+		fmt.Printf("send %v\n", string(blob))
+		if !*debugPtr {
+			if _, err := queue.SendMessage(string(blob)); err != nil {
+				panic(err)
+			}
 		}
 		cnt++
 		size += len(blob)
 	}
-	fmt.Printf("%d messages sents (%d bytes) to %v", cnt, size, *queuePtr)
+	fmt.Printf("%d messages sents (%d bytes) to %v\n", cnt, size, *queuePtr)
 }
