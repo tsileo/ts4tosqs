@@ -32,15 +32,25 @@ func main() {
 	go bs.Iter(*startPtr, *endPtr, blobs)
 	cnt := 0
 	size := 0
+	batch := []string{}
 	for blob := range blobs {
 		fmt.Printf("send %v\n", string(blob))
+		batch = append(batch, string(blob))
 		if !*debugPtr {
-			if _, err := queue.SendMessage(string(blob)); err != nil {
-				panic(err)
+			if len(batch) == 10 {
+				if _, err := queue.SendMessageBatchString(batch); err != nil {
+					panic(err)
+				}
+				batch = []string{}
 			}
 		}
 		cnt++
 		size += len(blob)
+	}
+	if len(batch) > 0 {
+		if _, err := queue.SendMessageBatchString(batch); err != nil {
+			panic(err)
+		}
 	}
 	fmt.Printf("%d messages sents (%d bytes) to %v\n", cnt, size, *queuePtr)
 }
